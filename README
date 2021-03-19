@@ -1,0 +1,12 @@
+# Super Resolution Project Data Extraction Code
+
+The code in src can be used to generate samples from the HSC/HST images
+stored in the data directory.
+
+The code expects the working directory to be the root directory of this
+repository.
+
+To add locations to extract, add corrdinates in the list `hsc_sample_locations`
+declared at src/extract_sample.py:L108
+
+You can download the files by running the `/data/download_data` script
