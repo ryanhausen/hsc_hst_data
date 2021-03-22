@@ -4,3 +4,4 @@ numpy==1.20.1
 pyerfa==1.7.2
 reproject==0.7.1
 scipy==1.6.1
+tqdm==4.59.0
