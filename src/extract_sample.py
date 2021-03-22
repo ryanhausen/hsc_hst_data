@@ -126,11 +126,9 @@ def main():
 
     edge_scaler = hsc_sample_size/2    # Handle edges 
 
-
-    #
     x_max,y_max =[dim-edge_scaler for dim in hsc.shape] # Subtract 1/2 dimension to avoid edges
 
-    num_samples = 500
+    num_samples = 500 # Number of samples to try to generate
 
     hsc_sample_locations = list(get_center_samples(num_samples,x_max,y_max,edge_scaler)) # Get HSC Centers 
 
