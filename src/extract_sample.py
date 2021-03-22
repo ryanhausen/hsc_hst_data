@@ -104,8 +104,8 @@ def extract_sample_old(y, x):
 def get_center_samples(num_samples,x_max,y_max,edge_scaler):
 
 
-    xs = [random.randint(edge_scaler,x_max) for example in range(0,num_samples)]
-    ys = [random.randint(edge_scaler,y_max) for example in range(0,num_samples)]
+    xs = [random.randint(edge_scaler,x_max) for example in range(0,num_samples)] # Generate X dims
+    ys = [random.randint(edge_scaler,y_max) for example in range(0,num_samples)] # Generate Y dims
 
     samples = zip(xs,ys)
 
@@ -132,7 +132,7 @@ def main():
 
     num_samples = 500
 
-    hsc_sample_locations = list(get_center_samples(num_samples,x_max,y_max,edge_scaler))
+    hsc_sample_locations = list(get_center_samples(num_samples,x_max,y_max,edge_scaler)) # Get HSC Centers 
 
 
     validate_idx_f = partial(validate_sample, mask, hsc_sample_size)
@@ -156,7 +156,7 @@ def main():
     for idx, yx in enumerate(hsc_sample_locations):
         if validate_idx_f(*yx):
             hsc_sample, hst_sample = extract_function_f(*yx)
-
+            # UNCOMMENT BELOW TO GENERATE SAMPLES
             # hsc_sample.writeto(f"../data/samples/hsc/{idx}.fits", overwrite=True)
             # hst_sample.writeto(f"../data/samples/hst/{idx}.fits", overwrite=True)
 
