@@ -7,7 +7,8 @@ from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.nddata import Cutout2D
-
+import random
+from astropy.nddata.utils import NoOverlapError
 # HST arcsec/pixel = 8.333333E-6
 # HSC arcsec/pixel = 4.66666666666396E-05
 
@@ -64,12 +65,17 @@ def extract_sample(
         wcs=WCS(hsc.header)
     )
 
-    hst_sample = Cutout2D(
-        data=hst.data,
-        position=skycoord,
-        size=hst_size,
-        wcs=WCS(hst.header),
-    )
+
+    try:
+        hst_sample = Cutout2D(
+            data=hst.data,
+            position=skycoord,
+            size=hst_size,
+            wcs=WCS(hst.header),
+        )
+    except NoOverlapError:
+        print(f"x coord: {x}, y coord: {y}")
+
 
     return (
         fits.PrimaryHDU(data=hsc_sample.data, header=hsc_sample.wcs.to_header()),
@@ -94,23 +100,43 @@ def extract_sample_old(y, x):
 
     fits.PrimaryHDU(data=hst_sample.data, header=hst_sample.wcs.to_header()).writeto("sample_hst.fits", overwrite=True)
 
+
+def get_center_samples(num_samples,x_max,y_max,edge_scaler):
+
+
+    xs = [random.randint(edge_scaler,x_max) for example in range(0,num_samples)]
+    ys = [random.randint(edge_scaler,y_max) for example in range(0,num_samples)]
+
+    samples = zip(xs,ys)
+
+    return samples
+
 def main():
 
-    mask = fits.getdata("./data/hst_to_hsc_footprint.fits")
-    hsc = fits.open("./data/cutout-HSC-I-9813-pdr2_dud-210317-161628.fits")[1]
-    hst = fits.open("./data/hlsp_candels_hst_acs_cos-tot_f814w_v1.0_drz.fits")[0]
+    mask = fits.getdata("../data/hst_to_hsc_footprint.fits")
+    hsc = fits.open("../data/cutout-HSC-I-9813-pdr2_dud-210317-161628.fits")[1]
+    hst = fits.open("../data/hlsp_candels_hst_acs_cos-tot_f814w_v1.0_drz.fits")[0]
 
     hsc_sample_size = 100
     hst_sample_size = hsc_sample_size * HST_HSC_RATIO
 
     # ==========================================================================
     # Add pixel locations here!
-    # ==========================================================================
-    hsc_sample_locations = [
-        (10229, 4383)
-    ]
+    # ========= =================================================================
+
+    edge_scaler = hsc_sample_size/2    # Handle edges 
+
+
+    #
+    x_max,y_max =[dim-edge_scaler for dim in hsc.shape] # Subtract 1/2 dimension to avoid edges
+
+    num_samples = 500
+
+    hsc_sample_locations = list(get_center_samples(num_samples,x_max,y_max,edge_scaler))
+
 
     validate_idx_f = partial(validate_sample, mask, hsc_sample_size)
+
     extract_function_f = partial(
         extract_sample,
         hsc,
@@ -120,19 +146,19 @@ def main():
     )
 
     data_dirs = [
-        "./data/samples/hsc"
-        "./data/samples/hst"
+        "../data/samples/hsc",
+        "../data/samples/hst"
     ]
     for dd in data_dirs:
         if not os.path.exists(dd):
-            os.path.makedirs(dd)
+            os.makedirs(dd)
 
     for idx, yx in enumerate(hsc_sample_locations):
         if validate_idx_f(*yx):
             hsc_sample, hst_sample = extract_function_f(*yx)
 
-            hsc_sample.writeto(f"./data/samples/hsc/{idx}.fits", overwrite=True)
-            hst_sample.writeto(f"./data/samples/hst/{idx}.fits", overwrite=True)
+            # hsc_sample.writeto(f"../data/samples/hsc/{idx}.fits", overwrite=True)
+            # hst_sample.writeto(f"../data/samples/hst/{idx}.fits", overwrite=True)
 
 
 

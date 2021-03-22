@@ -3,6 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+
+# data folders
+
+data/
+
+#env
+astro-gan/
+
 # C extensions
 *.so
 
