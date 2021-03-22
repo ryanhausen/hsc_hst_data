@@ -1,5 +1,7 @@
 import os
+import random
 from functools import partial
+from itertools import takewhile
 from typing import Tuple
 
 import numpy as np
@@ -7,8 +9,8 @@ from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.nddata import Cutout2D
-import random
 from astropy.nddata.utils import NoOverlapError
+from tqdm import tqdm
 # HST arcsec/pixel = 8.333333E-6
 # HSC arcsec/pixel = 4.66666666666396E-05
 
@@ -31,7 +33,7 @@ def validate_sample(mask:np.ndarray, size:int, y:int, x:int) -> bool:
         True if the size^2 sample at (y, x) exists in both HST and HSC and False
         if it only exists in one of the images.
     """
-    ys, xs = slice(y-size, y+size), slice(x-size, x+size)
+    ys, xs = slice(y-size//2, y+size//2), slice(x-size//2, x+size//2)
     return mask[ys, xs].all()
 
 def extract_sample(
@@ -82,40 +84,15 @@ def extract_sample(
         fits.PrimaryHDU(data=hst_sample.data, header=hst_sample.wcs.to_header()),
     )
 
-def extract_sample_old(y, x):
-    mask = fits.getdata("../data/hst_to_hsc_footprint.fits")
-
-    hsc_sample_y, hsc_sample_x = 10229, 4383
-    hsc_sky_coord = WCS_HSC.pixel_to_world(hsc_sample_x, hsc_sample_y)
-    hsc_size = 100
-    hsc = fits.getdata("../data/cutout-HSC-I-9813-pdr2_dud-210317-161628.fits")
-    hsc_sample = Cutout2D(hsc, hsc_sky_coord, hsc_size, wcs=WCS_HSC)
-
-    fits.PrimaryHDU(data=hsc_sample.data, header=hsc_sample.wcs.to_header()).writeto("sample_hsc.fits", overwrite=True)
-
-
-    hst_size = hsc_size * HST_HSC_RATIO
-    hst = fits.getdata("../data/hlsp_candels_hst_acs_cos-tot_f814w_v1.0_drz.fits")
-    hst_sample = Cutout2D(hst, hsc_sky_coord, hst_size, wcs=WCS_HST)
-
-    fits.PrimaryHDU(data=hst_sample.data, header=hst_sample.wcs.to_header()).writeto("sample_hst.fits", overwrite=True)
-
-
-def get_center_samples(num_samples,x_max,y_max,edge_scaler):
-
-
-    xs = [random.randint(edge_scaler,x_max) for example in range(0,num_samples)] # Generate X dims
-    ys = [random.randint(edge_scaler,y_max) for example in range(0,num_samples)] # Generate Y dims
-
-    samples = zip(xs,ys)
-
-    return samples
+def random_sample_generator(y_bnds, x_bnds):
+    while True:
+        yield random.randint(*y_bnds), random.randint(*x_bnds)
 
 def main():
 
-    mask = fits.getdata("../data/hst_to_hsc_footprint.fits")
-    hsc = fits.open("../data/cutout-HSC-I-9813-pdr2_dud-210317-161628.fits")[1]
-    hst = fits.open("../data/hlsp_candels_hst_acs_cos-tot_f814w_v1.0_drz.fits")[0]
+    mask = fits.getdata("./data/hst_to_hsc_footprint.fits")
+    hsc = fits.open("./data/cutout-HSC-I-9813-pdr2_dud-210317-161628.fits")[1]
+    hst = fits.open("./data/hlsp_candels_hst_acs_cos-tot_f814w_v1.0_drz.fits")[0]
 
     hsc_sample_size = 100
     hst_sample_size = hsc_sample_size * HST_HSC_RATIO
@@ -123,17 +100,22 @@ def main():
     # ==========================================================================
     # Add pixel locations here!
     # ========= =================================================================
-
-    edge_scaler = hsc_sample_size/2    # Handle edges 
-
-    x_max,y_max =[dim-edge_scaler for dim in hsc.shape] # Subtract 1/2 dimension to avoid edges
-
-    num_samples = 500 # Number of samples to try to generate
-
-    hsc_sample_locations = list(get_center_samples(num_samples,x_max,y_max,edge_scaler)) # Get HSC Centers 
-
-
     validate_idx_f = partial(validate_sample, mask, hsc_sample_size)
+
+    num_samples = 10 # Number of samples to try to generate
+    edge_scaler = hsc_sample_size/2    # Handle edges
+    y_max,x_max =[dim-edge_scaler for dim in hsc.shape] # Subtract 1/2 dimension to avoid edges
+    y_bounds, x_bounds = (edge_scaler, y_max), (edge_scaler, x_max)
+
+    hsc_sample_locations = takewhile(
+        lambda idx_coords: idx_coords[0] < num_samples,
+        enumerate(
+            filter(
+                lambda yx: validate_idx_f(*yx),
+                random_sample_generator(y_bounds, x_bounds)
+            )
+        )
+    )
 
     extract_function_f = partial(
         extract_sample,
@@ -144,19 +126,19 @@ def main():
     )
 
     data_dirs = [
-        "../data/samples/hsc",
-        "../data/samples/hst"
+        "./data/samples/hsc",
+        "./data/samples/hst"
     ]
+
     for dd in data_dirs:
         if not os.path.exists(dd):
             os.makedirs(dd)
 
-    for idx, yx in enumerate(hsc_sample_locations):
-        if validate_idx_f(*yx):
-            hsc_sample, hst_sample = extract_function_f(*yx)
-            # UNCOMMENT BELOW TO GENERATE SAMPLES
-            # hsc_sample.writeto(f"../data/samples/hsc/{idx}.fits", overwrite=True)
-            # hst_sample.writeto(f"../data/samples/hst/{idx}.fits", overwrite=True)
+    for idx, yx in tqdm(hsc_sample_locations, total=num_samples):
+        hsc_sample, hst_sample = extract_function_f(*yx)
+        # UNCOMMENT BELOW TO GENERATE SAMPLES
+        hsc_sample.writeto(f"./data/samples/hsc/{idx}.fits", overwrite=True)
+        hst_sample.writeto(f"./data/samples/hst/{idx}.fits", overwrite=True)
 
 
 
