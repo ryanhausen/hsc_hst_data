@@ -102,7 +102,7 @@ def main():
     # ========= =================================================================
     validate_idx_f = partial(validate_sample, mask, hsc_sample_size)
 
-    num_samples = 10 # Number of samples to try to generate
+    num_samples = 5000 # Number of samples to try to generate
     edge_scaler = hsc_sample_size/2    # Handle edges
     y_max,x_max =[dim-edge_scaler for dim in hsc.shape] # Subtract 1/2 dimension to avoid edges
     y_bounds, x_bounds = (edge_scaler, y_max), (edge_scaler, x_max)
