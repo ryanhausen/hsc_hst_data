@@ -58,8 +58,8 @@ def main():
     hst_path = join(data_path,"hst")
 
     data_dirs = [
-        "../data/samples/hsc/filtered",
-        "../data/samples/hst/filtered"]
+        "./data/samples/hsc/filtered",
+        "./data/samples/hst/filtered"]
 
     for dd in data_dirs:
         if not os.path.exists(dd):

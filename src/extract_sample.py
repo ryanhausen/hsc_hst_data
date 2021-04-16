@@ -18,7 +18,6 @@ HST_HSC_RATIO = 4.66666666666396E-05 / 8.333333E-6
 #WCS_HSC = WCS(fits.open("../data/cutout-HSC-I-9813-pdr2_dud-210317-161628.fits")[1].header)
 #WCS_HST =  WCS("../data/hlsp_candels_hst_acs_cos-tot_f814w_v1.0_drz.fits")
 
-
 def validate_sample(mask:np.ndarray, size:int, y:int, x:int) -> bool:
     """Validates a coordinate(y,x) and size for HSC/HST compatability.
 
@@ -90,19 +89,19 @@ def random_sample_generator(y_bnds, x_bnds):
 
 def main():
 
-    mask = fits.getdata("./data/hst_to_hsc_footprint.fits")
-    hsc = fits.open("./data/cutout-HSC-I-9813-pdr2_dud-210317-161628.fits")[1]
-    hst = fits.open("./data/hlsp_candels_hst_acs_cos-tot_f814w_v1.0_drz.fits")[0]
+    mask = fits.getdata("../data/hst_to_hsc_footprint.fits")
+    hsc = fits.open("../data/cutout-HSC-I-9813-pdr2_dud-210317-161628.fits")[1]
+    hst = fits.open("../data/resized_hst_f814w.fits")[0]
 
     hsc_sample_size = 100
-    hst_sample_size = hsc_sample_size * HST_HSC_RATIO
+    hst_sample_size = hsc_sample_size * 6
 
     # ==========================================================================
     # Add pixel locations here!
     # ========= =================================================================
     validate_idx_f = partial(validate_sample, mask, hsc_sample_size)
 
-    num_samples = 5000 # Number of samples to try to generate
+    num_samples = 10000 # Number of samples to try to generate
     edge_scaler = hsc_sample_size/2    # Handle edges
     y_max,x_max =[dim-edge_scaler for dim in hsc.shape] # Subtract 1/2 dimension to avoid edges
     y_bounds, x_bounds = (edge_scaler, y_max), (edge_scaler, x_max)
