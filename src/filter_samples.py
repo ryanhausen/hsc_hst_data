@@ -53,7 +53,7 @@ def copy_to_folders(fname:str, old_paths:list, new_paths:list):
 
 def main():
 
-    data_path = "../data/samples"
+    data_path = "./data/samples"
     hsc_path = join(data_path,"hsc")
     hst_path = join(data_path,"hst")
 
